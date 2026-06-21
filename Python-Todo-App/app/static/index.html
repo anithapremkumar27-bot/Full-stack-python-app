@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TodoSphere - A premium, glassmorphic Python FastAPI and SQLite To-Do dashboard.">
+    <title>TodoSphere | Premium Glassmorphic To-Do Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="app-sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-square-check"></i>
+                </div>
+                <h2>TodoSphere</h2>
+            </div>
+            
+            <div class="category-section">
+                <div class="section-header">
+                    <h3>Categories</h3>
+                    <button class="btn-icon-add" id="btn-add-category" title="Create New Category">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+                
+                <nav class="category-list" id="category-list" aria-label="Categories list">
+                    <!-- Dynamic category items loaded via JS -->
+                    <div class="loading-placeholder">Loading categories...</div>
+                </nav>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">
+                        <span class="user-initials">TS</span>
+                        <span class="status-indicator online"></span>
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">Guest User</span>
+                        <span class="user-role">Workspace Owner</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content" id="main-content">
+            <!-- Header/Top Navigation -->
+            <header class="app-header">
+                <div class="header-category-details">
+                    <h1 id="active-category-name">All Categories</h1>
+                    <p id="active-category-desc" class="text-secondary">Viewing all tasks across all categories.</p>
+                </div>
+                
+                <div class="header-actions">
+                    <div class="search-bar">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="task-search-input" placeholder="Search tasks by title or desc..." aria-label="Search tasks">
+                    </div>
+                    <button class="btn-primary" id="btn-create-task-main">
+                        <i class="fa-solid fa-plus"></i> New Task
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard / Analytics View -->
+            <section class="dashboard-section" id="dashboard-section">
+                <div class="section-title-bar">
+                    <h2><i class="fa-solid fa-chart-simple"></i> Analytics Overview</h2>
+                </div>
+                
+                <!-- Stat Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card" id="stat-total">
+                        <div class="stat-icon icon-indigo">
+                            <i class="fa-solid fa-list-check"></i>
+                        </div>
+                        <div class="stat-details">
+                            <span class="stat-title">Total Tasks</span>
+                            <span class="stat-value" id="count-total">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" id="stat-todo">
+                        <div class="stat-icon icon-blue">
+                            <i class="fa-regular fa-circle-play"></i>
+                        </div>
+                        <div class="stat-details">
+                            <span class="stat-title">To Do</span>
+                            <span class="stat-value" id="count-todo">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" id="stat-progress">
+                        <div class="stat-icon icon-amber">
+                            <i class="fa-solid fa-spinner fa-spin-pulse"></i>
+                        </div>
+                        <div class="stat-details">
+                            <span class="stat-title">In Progress</span>
+                            <span class="stat-value" id="count-progress">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card" id="stat-done">
+                        <div class="stat-icon icon-emerald">
+                            <i class="fa-regular fa-circle-check"></i>
+                        </div>
+                        <div class="stat-details">
+                            <span class="stat-title">Completed</span>
+                            <span class="stat-value" id="count-done">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Area -->
+                <div class="charts-grid">
+                    <div class="chart-card glass-panel">
+                        <h3>Task Status Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card glass-panel">
+                        <h3>Task Priority Level</h3>
+                        <div class="chart-container">
+                            <canvas id="priorityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Kanban Board View -->
+            <section class="board-section" id="board-section">
+                <div class="section-title-bar">
+                    <h2><i class="fa-solid fa-table-columns"></i> Kanban Board</h2>
+                    <div class="board-filters">
+                        <label for="priority-filter">Filter Priority:</label>
+                        <select id="priority-filter" class="form-select-sm">
+                            <option value="All">All Priorities</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="kanban-grid">
+                    <!-- Column: To Do -->
+                    <div class="kanban-column" data-status="To Do">
+                        <div class="column-header status-todo">
+                            <span class="indicator"></span>
+                            <h4>To Do</h4>
+                            <span class="column-badge" id="badge-todo">0</span>
+                        </div>
+                        <div class="column-body" id="col-todo" ondragover="allowDrop(event)" ondrop="dropTask(event)">
+                            <!-- Task cards loaded via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Column: In Progress -->
+                    <div class="kanban-column" data-status="In Progress">
+                        <div class="column-header status-progress">
+                            <span class="indicator"></span>
+                            <h4>In Progress</h4>
+                            <span class="column-badge" id="badge-progress">0</span>
+                        </div>
+                        <div class="column-body" id="col-progress" ondragover="allowDrop(event)" ondrop="dropTask(event)">
+                            <!-- Task cards loaded via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Column: Completed -->
+                    <div class="kanban-column" data-status="Completed">
+                        <div class="column-header status-completed">
+                            <span class="indicator"></span>
+                            <h4>Completed</h4>
+                            <span class="column-badge" id="badge-completed">0</span>
+                        </div>
+                        <div class="column-body" id="col-completed" ondragover="allowDrop(event)" ondrop="dropTask(event)">
+                            <!-- Task cards loaded via JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Modal: Category Create -->
+    <div class="modal-overlay" id="category-modal">
+        <div class="modal-card glass-panel">
+            <div class="modal-header">
+                <h2>Create Category</h2>
+                <button class="modal-close" id="btn-close-category-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="category-form">
+                <div class="form-group">
+                    <label for="category-name-input">Category Name <span class="required">*</span></label>
+                    <input type="text" id="category-name-input" placeholder="e.g. Life, Home, Finances" required>
+                </div>
+                <div class="form-group">
+                    <label for="category-color-input">Tag Color <span class="required">*</span></label>
+                    <div class="color-picker-wrapper">
+                        <input type="color" id="category-color-input" value="#8B5CF6">
+                        <span class="color-value-label">#8B5CF6</span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-category">Cancel</button>
+                    <button type="submit" class="btn-primary-gradient">Create Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Task Create/Edit -->
+    <div class="modal-overlay" id="task-modal">
+        <div class="modal-card glass-panel">
+            <div class="modal-header">
+                <h2 id="task-modal-title">Add New Task</h2>
+                <button class="modal-close" id="btn-close-task-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="task-form">
+                <input type="hidden" id="task-id-input">
+                <div class="form-group">
+                    <label for="task-title-input">Task Title <span class="required">*</span></label>
+                    <input type="text" id="task-title-input" placeholder="e.g., Buy groceries or Write API tests" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-desc-input">Description</label>
+                    <textarea id="task-desc-input" rows="3" placeholder="Add some descriptive notes here..."></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-half">
+                        <label for="task-status-input">Status</label>
+                        <select id="task-status-input" class="form-select">
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-half">
+                        <label for="task-priority-input">Priority</label>
+                        <select id="task-priority-input" class="form-select">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-half">
+                        <label for="task-category-input">Category <span class="required">*</span></label>
+                        <select id="task-category-input" class="form-select" required>
+                            <!-- Dynamically loaded categories -->
+                        </select>
+                    </div>
+                    <div class="form-group col-half">
+                        <label for="task-date-input">Due Date</label>
+                        <input type="date" id="task-date-input" class="form-date">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btn-cancel-task">Cancel</button>
+                    <button type="submit" class="btn-primary-gradient" id="btn-submit-task">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
